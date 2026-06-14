@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Innerval — Trust your sense of time</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0d1117;
+  --surface:  #161b22;
+  --surface2: #1c2330;
+  --surface3: #222d3a;
+  --border:   rgba(232,200,122,0.1);
+  --border2:  rgba(232,200,122,0.22);
+  --text:     #e8dcc8;
+  --text2:    #a89f8c;
+  --text3:    #6b6355;
+  --gold:     #e8c87a;
+  --gold-dim: rgba(232,200,122,0.1);
+  --gold-dim2:rgba(232,200,122,0.18);
+  --good:     #6fcf97;
+  --good-dim: rgba(111,207,151,0.12);
+  --warn:     #f2994a;
+  --warn-dim: rgba(242,153,74,0.12);
+  --bad:      #eb5757;
+  --bad-dim:  rgba(235,87,87,0.12);
+  --r:        14px;
+  --r-lg:     20px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+}
+
+/* Subtle grain texture via SVG filter */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+nav {
+  width: 100%;
+  max-width: 480px;
+  padding: 28px 24px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+.logo {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  color: var(--gold);
+  letter-spacing: -0.5px;
+}
+.logo-sub {
+  font-size: 10px;
+  color: var(--text2);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+.daily-chip {
+  font-size: 11px;
+  padding: 4px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.container {
+  width: 100%;
+  max-width: 480px;
+  padding: 0 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+}
+
+/* SCREENS */
+.screen { display: none; flex: 1; flex-direction: column; }
+.screen.active { display: flex; }
+
+/* ── START ── */
+#start-screen { padding: 48px 0 24px; }
+.hero {
+  margin-bottom: 48px;
+}
+.hero-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(38px, 9vw, 56px);
+  line-height: 1.05;
+  letter-spacing: -1.5px;
+  color: var(--text);
+  margin-bottom: 16px;
+}
+.hero-title em { color: var(--gold); font-style: italic; }
+.hero-desc {
+  font-size: 15px;
+  color: var(--text2);
+  line-height: 1.7;
+  max-width: 340px;
+}
+
+/* Decorative ring on start */
+.deco-ring {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 48px;
+  position: relative;
+}
+.deco-ring::before {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+}
+.deco-ring::after {
+  content: '';
+  position: absolute;
+  inset: 24px;
+  border-radius: 50%;
+  background: var(--gold-dim);
+}
+.deco-inner {
+  font-family: 'DM Serif Display', serif;
+  font-size: 13px;
+  color: var(--gold);
+  letter-spacing: 1px;
+  position: relative;
+  z-index: 1;
+}
+
+.rounds-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 36px;
+}
+.round-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 12px 16px;
+}
+.round-pill-left { display: flex; align-items: center; gap: 12px; }
+.round-num {
+  font-family: 'DM Serif Display', serif;
+  font-size: 20px;
+  color: var(--gold);
+  min-width: 28px;
+}
+.round-label { font-size: 13px; color: var(--text2); }
+.round-target {
+  font-size: 12px;
+  color: var(--text3);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.mode-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.mode-btn {
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--text2);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s;
+  font-family: 'DM Sans', sans-serif;
+  text-align: center;
+}
+.mode-btn:hover { border-color: var(--border2); color: var(--text); }
+.mode-btn.active { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
+.mode-sub { font-size: 10px; font-weight: 400; color: var(--text3); display: block; margin-top: 3px; }
+.mode-btn.active .mode-sub { color: rgba(232,200,122,0.5); }
+
+.daily-played-note {
+  background: var(--gold-dim);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--gold);
+  text-align: center;
+  margin-bottom: 14px;
+  display: none;
+}
+
+.play-btn {
+  width: 100%;
+  padding: 17px;
+  background: var(--gold);
+  color: var(--bg);
+  border: none;
+  border-radius: var(--r-lg);
+  font-family: 'DM Serif Display', serif;
+  font-size: 18px;
+  letter-spacing: -0.3px;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.play-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.play-btn:active { transform: scale(0.98); }
+.play-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+/* ── GAME ── */
+#game-screen { justify-content: center; align-items: center; text-align: center; padding: 40px 0; }
+
+.round-indicator {
+  font-size: 11px;
+  color: var(--text2);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.target-display { font-family: 'DM Serif Display', serif; font-size: clamp(52px, 12vw, 72px); color: var(--text); letter-spacing: -2px; line-height: 1; margin-bottom: 6px; transition: color 0.3s; }
+.target-display.faded { color: var(--text3); }
+.target-unit { font-size: 14px; color: var(--text2); margin-bottom: 36px; letter-spacing: 1px; }
+
+/* THE RING — signature element */
+.ring-wrap {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  margin: 0 auto 48px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+.ring-outer {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  transition: border-color 0.3s;
+}
+.ring-progress { display: none; }
+.ring-inner {
+  position: absolute;
+  inset: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--surface);
+  transition: background 0.3s, border-color 0.3s;
+}
+.ring-inner.holding {
+  background: var(--gold-dim2);
+  border-color: var(--border2);
+}
+.ring-cta {
+  font-size: 13px;
+  color: var(--text2);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: color 0.3s;
+  font-weight: 500;
+}
+.ring-cta.holding { color: var(--gold); }
+.ring-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid var(--gold);
+  opacity: 0;
+  transform: scale(1);
+}
+.ring-pulse.animate {
+  animation: heartbeat 1.8s ease-in-out infinite;
+}
+@keyframes heartbeat {
+  0%   { transform: scale(1);    opacity: 0.35; }
+  50%  { transform: scale(1.22); opacity: 0;    }
+  100% { transform: scale(1);    opacity: 0.35; }
+}
+
+.game-hint {
+  font-size: 12px;
+  color: var(--text3);
+  line-height: 1.6;
+  max-width: 260px;
+  margin: 0 auto;
+}
+
+/* ── RESULT ROUND ── */
+#round-result-screen { justify-content: center; align-items: center; text-align: center; padding: 40px 0; }
+
+.result-label-sm {
+  font-size: 11px;
+  color: var(--text2);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.result-numbers {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.result-you {
+  font-family: 'DM Serif Display', serif;
+  font-size: 64px;
+  letter-spacing: -2px;
+  line-height: 1;
+}
+.result-target-sm {
+  font-family: 'DM Serif Display', serif;
+  font-size: 28px;
+  color: var(--text2);
+  letter-spacing: -1px;
+}
+.result-diff {
+  font-size: 14px;
+  margin-bottom: 36px;
+  font-weight: 500;
+}
+.verdict {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  color: var(--text);
+  margin-bottom: 8px;
+  font-style: italic;
+}
+.verdict-sub { font-size: 13px; color: var(--text2); margin-bottom: 40px; }
+
+.next-btn {
+  width: 100%;
+  padding: 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-lg);
+  color: var(--text);
+  font-family: 'DM Serif Display', serif;
+  font-size: 17px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+  letter-spacing: -0.3px;
+}
+.next-btn:hover { background: var(--surface3); transform: translateY(-1px); }
+
+/* ── FINAL RESULT ── */
+#final-screen { padding: 40px 0 24px; }
+
+.final-eyebrow {
+  font-size: 11px;
+  color: var(--text2);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+.final-score-wrap {
+  text-align: center;
+  margin-bottom: 32px;
+}
+.final-score {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(64px, 16vw, 96px);
+  letter-spacing: -3px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.final-score-label { font-size: 13px; color: var(--text2); letter-spacing: 1px; }
+
+.rounds-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 32px;
+}
+.breakdown-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 12px 16px;
+}
+.br-left { display: flex; align-items: center; gap: 12px; }
+.br-target {
+  font-family: 'DM Serif Display', serif;
+  font-size: 18px;
+  color: var(--text2);
+  min-width: 48px;
+}
+.br-you { font-size: 13px; color: var(--text); }
+.br-you span { color: var(--text2); font-size: 11px; }
+.br-diff {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 99px;
+}
+.diff-great { background: var(--good-dim); color: var(--good); }
+.diff-ok    { background: var(--warn-dim); color: var(--warn); }
+.diff-off   { background: var(--bad-dim);  color: var(--bad);  }
+
+.percentile-bar-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px;
+  margin-bottom: 28px;
+  text-align: center;
+}
+.pct-label { font-size: 11px; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
+.pct-bar-bg {
+  height: 6px;
+  background: var(--surface3);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.pct-bar-fill {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--gold);
+  transition: width 1s ease;
+}
+.pct-num { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--gold); letter-spacing: -1px; }
+.pct-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+.share-row { display: flex; gap: 10px; margin-bottom: 12px; }
+.btn-x {
+  flex: 1;
+  padding: 14px;
+  background: var(--gold);
+  color: var(--bg);
+  border: none;
+  border-radius: var(--r-lg);
+  font-family: 'DM Serif Display', serif;
+  font-size: 16px;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+  letter-spacing: -0.3px;
+}
+.btn-x:hover { opacity: 0.88; transform: translateY(-1px); }
+.btn-copy {
+  flex: 1;
+  padding: 14px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-lg);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-copy:hover { background: var(--surface2); }
+.btn-again {
+  width: 100%;
+  padding: 14px;
+  background: transparent;
+  color: var(--text2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-again:hover { color: var(--text); border-color: var(--border2); }
+.toast { font-size: 12px; color: var(--good); text-align: center; height: 18px; margin-top: 8px; }
+
+/* FOOTER */
+footer {
+  width: 100%;
+  max-width: 480px;
+  padding: 20px 24px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+footer p { font-size: 12px; color: var(--text3); }
+footer a { color: var(--text2); text-decoration: none; transition: color 0.15s; }
+footer a:hover { color: var(--gold); }
+
+@media (max-width: 380px) {
+  .ring-wrap { width: 180px; height: 180px; }
+  .ring-progress { inset: 0; }
+  .hero-title { font-size: 34px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ring-pulse.animate { animation: none; }
+  * { transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div>
+    <div class="logo">Innerval</div>
+    <div class="logo-sub">Trust your time</div>
+  </div>
+  <div class="daily-chip" id="daily-chip"></div>
+</nav>
+
+<div class="container">
+
+  <!-- START -->
+  <div id="start-screen" class="screen active">
+    <div class="hero">
+      <h1 class="hero-title">How well do<br>you know <em>time?</em></h1>
+      <p class="hero-desc">No clock. No countdown. Just you, a target duration, and your inner sense of time. Hold the ring until you think it's done.</p>
+    </div>
+
+    <div class="rounds-preview" id="rounds-preview"></div>
+
+    <div class="mode-row">
+      <button class="mode-btn active" id="mode-classic" onclick="selectMode('classic')">
+        Classic
+        <span class="mode-sub">Random rounds</span>
+      </button>
+      <button class="mode-btn" id="mode-daily" onclick="selectMode('daily')">
+        Daily
+        <span class="mode-sub">Same for everyone</span>
+      </button>
+    </div>
+
+    <div class="daily-played-note" id="daily-note">You already played today. Come back tomorrow.</div>
+
+    <button class="play-btn" id="play-btn" onclick="startGame()">Begin →</button>
+  </div>
+
+  <!-- GAME -->
+  <div id="game-screen" class="screen">
+    <div class="round-indicator" id="round-indicator">Round 1 of 5</div>
+    <div class="target-display faded" id="target-display">?</div>
+    <div class="target-unit" id="target-unit">seconds</div>
+
+    <div class="ring-wrap" id="ring-wrap">
+      <div class="ring-outer"></div>
+      <svg class="ring-progress" viewBox="0 0 220 220" id="ring-svg">
+        <circle cx="110" cy="110" r="100" id="ring-circle"/>
+      </svg>
+      <div class="ring-inner" id="ring-inner">
+        <div class="ring-cta" id="ring-cta">Hold</div>
+      </div>
+      <div class="ring-pulse" id="ring-pulse"></div>
+    </div>
+
+    <p style="font-size:13px;color:var(--text2);line-height:1.65;max-width:260px;margin:0 auto;text-align:center;padding:0 8px;" id="game-hint">Hold the circle until you feel the time has passed. Release when ready.</p>
+  </div>
+
+  <!-- ROUND RESULT -->
+  <div id="round-result-screen" class="screen">
+    <div class="result-label-sm">You held for</div>
+    <div class="result-numbers">
+      <div class="result-you" id="rr-you">0.0</div>
+      <div class="result-target-sm" id="rr-target">/ 10s</div>
+    </div>
+    <div class="result-diff" id="rr-diff"></div>
+    <div class="verdict" id="rr-verdict"></div>
+    <div class="verdict-sub" id="rr-sub"></div>
+    <button class="next-btn" id="next-btn" onclick="nextRound()">Next round →</button>
+  </div>
+
+  <!-- FINAL -->
+  <div id="final-screen" class="screen">
+    <div class="final-eyebrow" id="final-eyebrow">Daily · <span id="final-date"></span></div>
+    <div class="final-score-wrap">
+      <div class="final-score" id="final-score" style="color:var(--gold)">98%</div>
+      <div class="final-score-label">TIME ACCURACY</div>
+    </div>
+
+    <div class="rounds-breakdown" id="rounds-breakdown"></div>
+
+    <div class="percentile-bar-wrap">
+      <div class="pct-label">Your percentile today</div>
+      <div class="pct-bar-bg"><div class="pct-bar-fill" id="pct-bar" style="width:0%"></div></div>
+      <div class="pct-num" id="pct-num">—</div>
+      <div class="pct-sub" id="pct-sub">calculating...</div>
+    </div>
+
+    <div class="share-row">
+      <button class="btn-x" onclick="shareOnX()">Share on X ↗</button>
+      <button class="btn-copy" onclick="copyResult()">Copy result</button>
+    </div>
+    <button class="btn-again" onclick="backToMenu()">← Back to menu</button>
+    <div class="toast" id="toast"></div>
+  </div>
+
+</div>
+
+<footer>
+  <p>Developed by <a href="https://twitter.com/shubhamlashkan" target="_blank" rel="noopener">@shubhamlashkan</a></p>
+</footer>
+
+<script>
+const POOL = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+
+function randomTargets() {
+  const pool = POOL.slice().sort(() => Math.random() - 0.5);
+  return pool.slice(0, 5);
+}
+
+function getDailySeed() {
+  const d = new Date();
+  return d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate();
+}
+function getDailyRounds() {
+  let s = getDailySeed();
+  const pool = POOL.slice();
+  for (let i = pool.length - 1; i > 0; i--) {
+    s = (s * 1664525 + 1013904223) & 0xffffffff;
+    const j = Math.abs(s) % (i + 1);
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, 5);
+}
+function todayKey() {
+  const d = new Date();
+  return `innerval_daily_${d.getFullYear()}_${d.getMonth()}_${d.getDate()}`;
+}
+function getDailyResult() { try { return JSON.parse(localStorage.getItem(todayKey())); } catch { return null; } }
+function saveDailyResult(data) { try { localStorage.setItem(todayKey(), JSON.stringify(data)); } catch {} }
+function dateStr() { return new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' }); }
+
+document.getElementById('daily-chip').textContent = dateStr();
+
+let mode = 'classic';
+let targets = [], roundIdx = 0, results = [];
+let holdStart = null, holdInterval = null, isHolding = false, gamePhase = 'idle';
+
+function selectMode(m) {
+  mode = m;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mode-' + m).classList.add('active');
+  const note = document.getElementById('daily-note');
+  const btn  = document.getElementById('play-btn');
+  if (m === 'daily' && getDailyResult()) {
+    note.style.display = 'block';
+    btn.disabled = true;
+  } else {
+    note.style.display = 'none';
+    btn.disabled = false;
+  }
+  renderPreview();
+}
+
+function getTargets() {
+  if (mode === 'daily') return getDailyRounds();
+  return randomTargets();
+}
+
+function renderPreview() {
+  const t = mode === 'daily' ? getDailyRounds() : randomTargets();
+  const labels = ['First', 'Then', 'Then', 'Then', 'Finally'];
+  document.getElementById('rounds-preview').innerHTML = t.map((sec, i) =>
+    `<div class="round-pill">
+      <div class="round-pill-left">
+        <div class="round-num">${i+1}</div>
+        <div class="round-label">${labels[i]}</div>
+      </div>
+      <div class="round-target">${sec}s</div>
+    </div>`
+  ).join('');
+}
+
+renderPreview();
+
+function startGame() {
+  targets = getTargets();
+  roundIdx = 0; results = [];
+  showRound();
+}
+
+function showRound() {
+  showScreen('game-screen');
+  gamePhase = 'waiting';
+  const target = targets[roundIdx];
+  document.getElementById('round-indicator').textContent = `Round ${roundIdx+1} of ${targets.length}`;
+  document.getElementById('target-display').textContent = target;
+  document.getElementById('target-display').classList.remove('faded');
+  document.getElementById('target-unit').textContent = target === 1 ? 'second' : 'seconds';
+  document.getElementById('ring-cta').textContent = 'Hold';
+  document.getElementById('ring-cta').classList.remove('holding');
+  document.getElementById('ring-inner').classList.remove('holding');
+  document.getElementById('ring-pulse').classList.remove('animate');
+  const hintEl = document.getElementById('game-hint');
+  if (hintEl) hintEl.textContent = `Hold the circle for exactly ${target} second${target===1?'':'s'}. Release when you feel the time is up.`;
+
+  // After 2s hide the number — but only if still in this round
+  const thisRound = roundIdx;
+  setTimeout(() => {
+    if (roundIdx !== thisRound) return;
+    if (gamePhase !== 'waiting' && gamePhase !== 'holding') return;
+    const td = document.getElementById('target-display');
+    if (td) { td.classList.add('faded'); td.textContent = '?'; }
+  }, 2000);
+
+  const ring = document.getElementById('ring-wrap');
+  ring.onpointerdown = startHold;
+  ring.onpointerup = endHold;
+  ring.onpointercancel = endHold;
+}
+
+function startHold(e) {
+  if (isHolding || gamePhase === 'done') return;
+  e.preventDefault();
+  ring.setPointerCapture && document.getElementById('ring-wrap').setPointerCapture(e.pointerId);
+  isHolding = true;
+  gamePhase = 'holding';
+  holdStart = performance.now();
+  document.getElementById('ring-cta').textContent = 'Holding...';
+  document.getElementById('ring-cta').classList.add('holding');
+  document.getElementById('ring-inner').classList.add('holding');
+  document.getElementById('ring-pulse').classList.add('animate');
+
+  const target = targets[roundIdx];
+  holdInterval = setInterval(() => {
+    const elapsed = (performance.now() - holdStart) / 1000;
+    if (elapsed >= target * 3) {
+      endHold(null, true);
+    }
+  }, 100);
+}
+
+function endHold(e, auto) {
+  if (!isHolding) return;
+  isHolding = false;
+  gamePhase = 'done';
+  clearInterval(holdInterval);
+  const elapsed = (performance.now() - holdStart) / 1000;
+  const ctaEl = document.getElementById('ring-cta');
+  const pulseEl = document.getElementById('ring-pulse');
+  if (ctaEl) ctaEl.textContent = 'Done';
+  if (pulseEl) pulseEl.classList.remove('animate');
+
+  results.push({ target: targets[roundIdx], held: elapsed });
+  setTimeout(() => showRoundResult(targets[roundIdx], elapsed), 300);
+}
+
+const ring = document.getElementById('ring-wrap');
+
+function showRoundResult(target, held) {
+  showScreen('round-result-screen');
+  const diff = Math.abs(held - target);
+  const pct  = Math.max(0, 100 - Math.round((diff / target) * 100));
+  const over = held > target;
+
+  document.getElementById('rr-you').textContent = held.toFixed(2);
+  document.getElementById('rr-you').style.color = pct >= 80 ? 'var(--good)' : pct >= 50 ? 'var(--warn)' : 'var(--bad)';
+  document.getElementById('rr-target').textContent = `/ ${target}s`;
+
+  const diffStr = diff < 0.05 ? 'perfect' : `${diff.toFixed(2)}s ${over ? 'over' : 'under'}`;
+  document.getElementById('rr-diff').textContent = diffStr;
+  document.getElementById('rr-diff').style.color = pct >= 80 ? 'var(--good)' : pct >= 50 ? 'var(--warn)' : 'var(--bad)';
+
+  let verdict, sub;
+  if (diff < 0.1)      { verdict = 'Uncanny.';       sub = 'Your inner clock is extraordinary.'; }
+  else if (diff < 0.5) { verdict = 'Very close.';    sub = 'You have a sharp sense of time.'; }
+  else if (diff < 1.5) { verdict = 'Pretty good.';   sub = 'Most people are further off than that.'; }
+  else if (diff < 3)   { verdict = 'Not bad.';       sub = 'Your rhythm is a little off today.'; }
+  else                 { verdict = 'Way off.';        sub = `You were ${diff.toFixed(1)}s ${over ? 'too slow' : 'too fast'}.`; }
+
+  document.getElementById('rr-verdict').textContent = verdict;
+  document.getElementById('rr-sub').textContent = sub;
+
+  const isLast = roundIdx >= targets.length - 1;
+  const nextBtn = document.getElementById('next-btn');
+  nextBtn.textContent = isLast ? 'See your results →' : `Round ${roundIdx + 2} →`;
+}
+
+function nextRound() {
+  roundIdx++;
+  if (roundIdx >= targets.length) showFinalResult();
+  else showRound();
+}
+
+function showFinalResult() {
+  showScreen('final-screen');
+  const totalPct = results.reduce((acc, r) => {
+    const diff = Math.abs(r.held - r.target);
+    return acc + Math.max(0, 100 - Math.round((diff / r.target) * 100));
+  }, 0);
+  const avg = Math.round(totalPct / results.length);
+
+  document.getElementById('final-score').textContent = avg + '%';
+  document.getElementById('final-date').textContent = dateStr();
+  document.getElementById('final-eyebrow').innerHTML = mode === 'daily'
+    ? `Daily · <span>${dateStr()}</span>`
+    : `Classic · <span>${dateStr()}</span>`;
+
+  const breakdown = document.getElementById('rounds-breakdown');
+  breakdown.innerHTML = results.map((r, i) => {
+    const diff = Math.abs(r.held - r.target);
+    const p = Math.max(0, 100 - Math.round((diff / r.target) * 100));
+    const cls = p >= 80 ? 'diff-great' : p >= 50 ? 'diff-ok' : 'diff-off';
+    const label = p >= 80 ? `+${p}%` : `${p}%`;
+    return `<div class="breakdown-row">
+      <div class="br-left">
+        <div class="br-target">${r.target}s</div>
+        <div class="br-you">You held <span>${r.held.toFixed(2)}s</span></div>
+      </div>
+      <div class="br-diff ${cls}">${label} accuracy</div>
+    </div>`;
+  }).join('');
+
+  // Simulated percentile based on score (local — no backend)
+  const percentile = Math.min(99, Math.round(avg * 0.95 + Math.random() * 8));
+  setTimeout(() => {
+    document.getElementById('pct-bar').style.width = percentile + '%';
+    document.getElementById('pct-num').textContent = `Top ${100 - percentile}%`;
+    document.getElementById('pct-sub').textContent = `Better than ${percentile}% of players today`;
+  }, 400);
+
+  if (mode === 'daily') saveDailyResult({ score: avg, results, date: new Date().toDateString() });
+}
+
+function buildShareText() {
+  const avg = Math.round(results.reduce((a, r) => a + Math.max(0, 100 - Math.round((Math.abs(r.held - r.target) / r.target) * 100)), 0) / results.length);
+  const bars = results.map(r => {
+    const p = Math.max(0, 100 - Math.round((Math.abs(r.held - r.target) / r.target) * 100));
+    return p >= 80 ? '🟩' : p >= 50 ? '🟨' : '🟥';
+  }).join('');
+  const modeStr = mode === 'daily' ? `Daily (${dateStr()})` : 'Classic';
+  return `Innerval — ${modeStr}\n\nTime accuracy: ${avg}%\n${bars}\n\nCan you trust your inner clock?\nPlay free → https://shubhamlashkan.github.io/Innerval/\n\nby @shubhamlashkan`;
+}
+
+function shareOnX() {
+  window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(buildShareText()), '_blank');
+}
+
+function copyResult() {
+  navigator.clipboard.writeText(buildShareText()).then(() => {
+    const t = document.getElementById('toast');
+    t.textContent = 'Copied to clipboard!';
+    setTimeout(() => t.textContent = '', 2000);
+  });
+}
+
+function backToMenu() {
+  showScreen('start-screen');
+  selectMode(mode);
+  renderPreview();
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+</script>
+</body>
+</html>
