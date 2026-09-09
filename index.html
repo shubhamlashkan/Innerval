@@ -720,6 +720,15 @@ renderPreview();
 function startGame() {
   targets = getTargets();
   roundIdx = 0; results = [];
+   // Track that a player actually started a game
+  gtag('event', 'game_start', {
+    game_mode: mode
+  });
+
+  // Track Daily Challenge starts separately
+  if (mode === 'daily') {
+    gtag('event', 'daily_challenge_start');
+  }
   showRound();
 }
 
@@ -864,6 +873,19 @@ function showFinalResult() {
   }, 400);
 
   if (mode === 'daily') saveDailyResult({ score: avg, results, date: new Date().toDateString() });
+  // Track completed games
+gtag('event', 'game_complete', {
+  game_mode: mode,
+  score: avg,
+  rounds: results.length
+});
+
+// Track completed Daily Challenges separately
+if (mode === 'daily') {
+  gtag('event', 'daily_challenge_complete', {
+    score: avg
+  });
+}
 }
 
 function buildShareText() {
